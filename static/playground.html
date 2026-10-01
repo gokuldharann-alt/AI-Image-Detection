@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Veritas — EfficientNet Playground</title>
+<meta name="description" content="Step through EfficientNet-B0 with one photo: preprocess, MBConv blocks, head, sigmoid." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { sans: ['Montserrat','system-ui','sans-serif'] },
+    colors: { spotify: '#1DB954', spotifydark: '#1AA34A', ink: '#121212', card: '#181818', cardhover: '#282828', muted: '#B3B3B3', line: '#2A2A2A' }
+  }}}
+</script>
+<link rel="stylesheet" href="/static/styles.css" />
+<style>
+  .step-dot{ width:34px;height:34px;border-radius:9999px;display:grid;place-items:center;font-weight:900;font-size:13px;border:2px solid #2A2A2A;background:#181818;color:#B3B3B3;flex-shrink:0; }
+  .step-active .step-dot{ border-color:#1DB954;background:#1DB954;color:#000;box-shadow:0 0 18px rgba(29,185,84,.5);}
+  .step-done .step-dot{ border-color:#1DB954;color:#1DB954; }
+  .block-bar{ height:44px;border-radius:10px;border:1px solid #2A2A2A;background:linear-gradient(90deg,rgba(29,185,84,.35),rgba(29,185,84,.06));display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:800;transition:all .3s; }
+  .block-active{ border-color:#1DB954 !important; box-shadow:0 0 0 3px rgba(29,185,84,.25); transform:scale(1.015); }
+  .block-dim{ opacity:.45; }
+</style>
+</head>
+<body class="bg-ink text-white antialiased">
+<header class="sticky top-0 z-40 border-b border-line bg-black/80 backdrop-blur-md">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
+    <a href="/" class="flex items-center gap-3">
+      <div class="logo-pulse grid h-10 w-10 place-items-center rounded-full bg-spotify text-xl font-black text-black">V</div>
+      <div><p class="text-[15px] font-extrabold tracking-tight leading-none">Veritas</p>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">CNN Playground</p></div>
+    </a>
+    <nav class="flex items-center gap-5 text-[13px] font-bold text-muted">
+      <a href="/" class="transition hover:text-white">Detect</a>
+      <a href="/gallery" class="transition hover:text-white">Datasets</a>
+      <a href="/playground" class="text-white">Playground</a>
+      <a href="/metrics" class="transition hover:text-white">Metrics</a>
+      <a href="/docs" class="transition hover:text-white">API</a>
+    </nav>
+  </div>
+</header>
+
+<main class="mx-auto max-w-6xl px-5 pb-20">
+  <section class="fade-up pt-10 text-center">
+    <h1 class="text-4xl font-black tracking-tight md:text-5xl">One photo, <span class="text-spotify">every block.</span></h1>
+    <p class="mx-auto mt-3 max-w-2xl text-[14px] font-medium text-muted">Upload any image — we run the real <code class="rounded bg-card px-1 text-spotify">/api/predict</code> model, then walk its numbers stage-by-stage: decode → preprocess → EfficientNet-B0 MBConv stack → head → sigmoid.</p>
+  </section>
+
+  <section class="mt-8 grid gap-5 lg:grid-cols-5">
+    <!-- left: input + stepper -->
+    <div class="space-y-4 lg:col-span-2">
+      <div class="rounded-2xl border border-line bg-card p-5">
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-muted">1 · Pick a photo</p>
+        <input id="fileInput" type="file" accept="image/*" class="mt-3 w-full text-[12px] font-semibold text-muted" />
+        <div class="mt-2 flex gap-2">
+          <button id="sampleBtn" class="rounded-full border border-line px-4 py-2 text-[12px] font-bold text-muted hover:border-spotify/60 hover:text-white">Use gallery sample</button>
+          <button id="runBtn" disabled class="flex-1 rounded-full bg-spotify py-2.5 text-[13px] font-extrabold uppercase tracking-widest text-black disabled:bg-cardhover disabled:text-muted">▶ Run simulation</button>
+        </div>
+        <img id="preview" class="mt-3 hidden max-h-56 w-full rounded-xl border border-line object-contain bg-black" alt="input preview" />
+        <p id="fileMeta" class="mt-2 text-[11px] font-semibold text-muted"></p>
+      </div>
+      <div id="steps" class="space-y-2.5"></div>
+    </div>
+
+    <!-- right: block visualization -->
+    <div class="space-y-4 lg:col-span-3">
+      <div class="rounded-2xl border border-line bg-card p-5">
+        <div class="flex items-center justify-between">
+          <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-muted">EfficientNet-B0 · live trace</p>
+          <p id="engineLine" class="text-[11px] font-bold text-muted">no run yet</p>
+        </div>
+        <div id="blocks" class="mt-3 space-y-2"></div>
+      </div>
+      <div class="rounded-2xl border border-line bg-black p-5">
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-muted">Stage inspector</p>
+        <h3 id="stageTitle" class="mt-1 text-xl font-black">Pick a photo and run</h3>
+        <p id="stageBody" class="mt-2 text-[13px] font-medium leading-relaxed text-muted">Each block below lights up as the image flows through. Click any executed block to inspect shapes, channels and the real timings from your inference.</p>
+        <div id="stageNums" class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4"></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="mt-6 text-center text-[11px] font-medium text-muted/70">Architecture: Stem 3×3/32 → MBConv1×1/16 → MBConv6×2/24 → MBConv6×2/40 → MBConv6×3/80 → MBConv6×3/112 → MBConv6×4/192 → MBConv6×1/320 → Conv1×1/1280 → GAP + FC→1 logit. Widths are real B0 channels; spatial bars shrink with stride.</p>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const fileInput = $("fileInput"), runBtn = $("runBtn"), preview = $("preview"), fileMeta = $("fileMeta");
+  const blocksEl = $("blocks"), stepsEl = $("steps"), stageTitle = $("stageTitle"), stageBody = $("stageBody"), stageNums = $("stageNums"), engineLine = $("engineLine");
+  let file = null, result = null;
+
+  const BLOCKS = [
+    { n: "Stem 3×3", c: 32, s: "192×192", d: "Halves 384→192, 32 filters. Catches edges." },
+    { n: "MBConv1 ×1", c: 16, s: "192×192", d: "Depthwise + SE squeeze-excite. Cheap refine." },
+    { n: "MBConv6 ×2", c: 24, s: "96×96", d: "Expand 6× → depthwise → project. First downsample." },
+    { n: "MBConv6 ×2", c: 40, s: "48×48", d: "Texture motifs emerge here." },
+    { n: "MBConv6 ×3", c: 80, s: "24×24", d: "Mid-level parts: eyes, foliage, JPEG ghosts." },
+    { n: "MBConv6 ×3", c: 112, s: "14×14", d: "Semantic patches; generator fingerprints live here." },
+    { n: "MBConv6 ×4", c: 192, s: "12×12", d: "Deepest spatial reasoning before head." },
+    { n: "MBConv6 ×1", c: 320, s: "12×12", d: "Final expansion, rich 320-D code." },
+    { n: "Head 1×1 + GAP", c: 1280, s: "1×1", d: "Pointwise to 1280-D (this is the activation probe), global-average-pooled." },
+    { n: "FC → logit → σ", c: 1, s: "scalar", d: "Single weight vector → logit → sigmoid = P(FAKE). Threshold 0.5." },
+  ];
+  const STEPS = ["Upload", "Decode", "Preprocess", "Forward (blocks)", "Sigmoid + verdict"];
+
+  function renderScaffolding(activeStep = -1) {
+    stepsEl.innerHTML = STEPS.map((s, i) =>
+      `<div class="flex items-center gap-3 rounded-xl border border-line bg-card px-3 py-2.5 ${i === activeStep ? "step-active" : i < activeStep ? "step-done" : ""}">
+        <div class="step-dot">${i < activeStep ? "✓" : i + 1}</div>
+        <p class="text-[13px] font-extrabold">${s}</p></div>`).join("");
+    blocksEl.innerHTML = BLOCKS.map((b, i) => {
+      const w = Math.min(100, 18 + (b.c / 1280) * 82);
+      return `<button data-i="${i}" class="block-bar block-dim w-full text-left" style="width:${w}%">
+        <span class="truncate">${i + 1}. ${b.n} · ${b.c}ch · ${b.s}</span></button>`;
+    }).join("");
+    blocksEl.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => inspect(+btn.dataset.i)));
+  }
+
+  function inspect(i) {
+    document.querySelectorAll("#blocks button").forEach((b, j) => b.classList.toggle("block-active", i === j));
+    const b = BLOCKS[i];
+    stageTitle.textContent = `${i + 1}. ${b.n}`;
+    let extra = b.d;
+    if (result && i === BLOCKS.length - 1) {
+      extra += ` Your photo: logit ${result.logit}, P(FAKE) ${result.prob_fake}, P(REAL) ${result.prob_real} → ${result.label} ${(result.confidence * 100).toFixed(1)}%.`;
+    }
+    if (result && i === BLOCKS.length - 2 && result.activations?.channels) {
+      extra += ` Live probe: ${result.activations.channels}ch, mean ${result.activations.channel_mean}, sparsity ${(result.activations.sparsity * 100).toFixed(1)}%, top ${JSON.stringify(result.activations.top_channels)}.`;
+    }
+    stageBody.textContent = extra;
+  }
+
+  // ?img= passthrough from gallery
+  const q = new URLSearchParams(location.search).get("img");
+  if (q) { fetch(q).then(r => r.blob()).then(bl => {
+    file = new File([bl], "gallery-sample.jpg", { type: "image/jpeg" });
+    preview.src = URL.createObjectURL(bl); preview.classList.remove("hidden");
+    fileMeta.textContent = "gallery sample loaded — hit Run simulation.";
+    runBtn.disabled = false;
+  }).catch(() => {}); }
+
+  fileInput.addEventListener("change", () => {
+    file = fileInput.files[0] || null;
+    if (!file) return;
+    preview.src = URL.createObjectURL(file); preview.classList.remove("hidden");
+    fileMeta.textContent = `${file.name} · ${(file.size / 1024).toFixed(1)} KB`;
+    runBtn.disabled = false;
+  });
+  $("sampleBtn").addEventListener("click", async () => {
+    const r = await fetch("/api/datasets/images?dataset=HQ&split=test&cls=FAKE&offset=0&limit=1");
+    const j = await r.json(); if (!j.images.length) return;
+    const br = await fetch(j.images[0].url); const bl = await br.blob();
+    file = new File([bl], j.images[0].name, { type: "image/jpeg" });
+    preview.src = URL.createObjectURL(bl); preview.classList.remove("hidden");
+    fileMeta.textContent = `HQ/test/FAKE/${j.images[0].name} — hit Run.`;
+    runBtn.disabled = false;
+  });
+
+  runBtn.addEventListener("click", async () => {
+    if (!file) return;
+    runBtn.disabled = true; runBtn.textContent = "◌ Running…";
+    renderScaffolding(0);
+    const fd = new FormData(); fd.append("file", file, file.name);
+    renderScaffolding(1);
+    stageTitle.textContent = "2. Decode"; stageBody.textContent = "PIL → RGB pixels. See logs[decode] for WxH.";
+    const res = await fetch("/api/predict", { method: "POST", body: fd });
+    const d = await res.json(); result = d;
+    renderScaffolding(2);
+    stageTitle.textContent = "3. Preprocess"; stageBody.textContent = `Resize→441 + CenterCrop→384 + ImageNet normalize → tensor ${d.telemetry?.input_shape || "(1,3,384,384)"}.`;
+    await new Promise(r => setTimeout(r, 350));
+    renderScaffolding(3);
+    engineLine.textContent = `${d.telemetry?.device || ""} · ${d.telemetry?.engine || ""} · forward ${d.telemetry?.stages_ms?.forward ?? "—"} ms`;
+    // animate blocks
+    const btns = [...blocksEl.querySelectorAll("button")];
+    btns.forEach(b => b.classList.remove("block-dim"));
+    for (let i = 0; i < btns.length; i++) {
+      btns.forEach((b, j) => b.classList.toggle("block-active", i === j));
+      await new Promise(r => setTimeout(r, 220));
+    }
+    renderScaffolding(5);
+    const chips = [["Logit", d.logit], ["P(FAKE)", d.prob_fake], ["P(REAL)", d.prob_real],
+      ["Verdict", `${d.label} ${(d.confidence * 100).toFixed(1)}%`], ["Total", `${d.telemetry?.total_ms} ms`],
+      ["Sparsity", d.activations?.sparsity ?? "—"], ["Top-ch", JSON.stringify(d.activations?.top_channels ?? [])],
+      ["Threshold", d.threshold]];
+    stageNums.innerHTML = chips.map(([k, v]) =>
+      `<div class="tele-chip"><p>${k}</p><p>${v}</p></div>`).join("");
+    inspect(BLOCKS.length - 1);
+    runBtn.disabled = false; runBtn.textContent = "▶ Run simulation";
+  });
+
+  renderScaffolding(-1);
+})();
+</script>
+</body>
+</html>

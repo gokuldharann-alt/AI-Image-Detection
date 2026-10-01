@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Veritas — Evaluation Metrics</title>
+<meta name="description" content="Honest test numbers: accuracy, precision, recall, F1, AUC, confusion matrices, per-generator breakdown." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { sans: ['Montserrat','system-ui','sans-serif'] },
+    colors: { spotify: '#1DB954', spotifydark: '#1AA34A', ink: '#121212', card: '#181818', cardhover: '#282828', muted: '#B3B3B3', line: '#2A2A2A' }
+  }}}
+</script>
+<link rel="stylesheet" href="/static/styles.css" />
+<style>
+  .metric-card{ background:#181818; border:1px solid #2A2A2A; border-radius:16px; padding:14px 16px; }
+  .metric-card .k{ font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#B3B3B3; }
+  .metric-card .v{ margin-top:2px; font-size:24px; font-weight:900; }
+  .cm{ display:grid; grid-template-columns:1fr 1fr; gap:8px; max-width:340px; }
+  .cm div{ border-radius:12px; padding:12px; text-align:center; border:1px solid #2A2A2A; }
+  .cm .tn{ background:rgba(29,185,84,.12); } .cm .tp{ background:rgba(232,121,249,.12); }
+  .cm .fp,.cm .fn{ background:#0f0f0f; }
+  .srcbar{ height:8px; border-radius:9999px; background:#282828; overflow:hidden; }
+  .srcbar > div{ height:100%; border-radius:9999px; background:#1DB954; }
+</style>
+</head>
+<body class="bg-ink text-white antialiased">
+<header class="sticky top-0 z-40 border-b border-line bg-black/80 backdrop-blur-md">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
+    <a href="/" class="flex items-center gap-3">
+      <div class="logo-pulse grid h-10 w-10 place-items-center rounded-full bg-spotify text-xl font-black text-black">V</div>
+      <div><p class="text-[15px] font-extrabold tracking-tight leading-none">Veritas</p>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Metrics</p></div>
+    </a>
+    <nav class="flex items-center gap-5 text-[13px] font-bold text-muted">
+      <a href="/" class="transition hover:text-white">Detect</a>
+      <a href="/gallery" class="transition hover:text-white">Datasets</a>
+      <a href="/playground" class="transition hover:text-white">Playground</a>
+      <a href="/metrics" class="text-white">Metrics</a>
+      <a href="/docs" class="transition hover:text-white">API</a>
+    </nav>
+  </div>
+</header>
+
+<main class="mx-auto max-w-6xl px-5 pb-20">
+  <section class="fade-up pt-10 text-center">
+    <h1 class="text-4xl font-black tracking-tight md:text-5xl">Test numbers, <span class="text-spotify">no cherry-picking.</span></h1>
+    <p id="metaLine" class="mx-auto mt-3 max-w-2xl text-[13px] font-medium text-muted">loading metrics…</p>
+  </section>
+  <div id="sets" class="mt-8 space-y-8"></div>
+  <section class="mt-10 rounded-2xl border border-line bg-card p-6">
+    <h2 class="text-lg font-black">How to read this</h2>
+    <ul class="mt-2 list-disc space-y-1.5 pl-5 text-[13px] font-medium leading-relaxed text-muted">
+      <li><b class="text-white">FAKE = positive class.</b> Precision = of flagged-fake, how many truly fake. Recall = of truly-fake, how many caught.</li>
+      <li><b class="text-white">HQ-test</b> is the original distribution (COCO reals + MJ/nano/art fakes). This checkpoint was later retrained on AUTO, so HQ FAKE recall 0.818 shows mild forgetting vs its original 0.947 val — reported honestly.</li>
+      <li><b class="text-white">AUTO-test</b> covers modern generators (Defactify SD3/DALLE3/MJv6, v3 FLUX, Tiny-GenImage) — the closest thing to an unseen-generator check without a 12GB Synthbuster download.</li>
+      <li>Threshold is fixed at 0.5 (see <code class="rounded bg-black px-1 text-spotify">config.THRESHOLD</code>). No threshold tuning was applied — F1/AUC are reported at 0.5.</li>
+      <li>Regenerate anytime: <code class="rounded bg-black px-1 text-spotify">python eval_metrics.py --checkpoint weights/hq_efficientnet_b0.pt</code></li>
+    </ul>
+  </section>
+</main>
+
+<script>
+(async () => {
+  const meta = document.getElementById("metaLine"), setsEl = document.getElementById("sets");
+  let m;
+  try { m = await (await fetch("/api/metrics")).json(); }
+  catch { meta.textContent = "metrics unavailable — run python eval_metrics.py first."; return; }
+  meta.innerHTML = `checkpoint <b class="text-white">${m.checkpoint}</b> · backbone ${m.backbone} · img ${m.img_size}px · threshold ${m.threshold} · saved val acc ${m.saved_val_acc} · evaluated ${m.generated_at} (${m.eval_seconds}s on CPU)`;
+
+  for (const [name, s] of Object.entries(m.sets)) {
+    const c = s.confusion;
+    const cards = [["Accuracy", s.accuracy], ["Precision (FAKE)", s.precision_fake], ["Recall (FAKE)", s.recall_fake], ["F1 (FAKE)", s.f1_fake], ["AUC", s.auc ?? "—"], ["n", s.n]]
+      .map(([k, v]) => `<div class="metric-card"><p class="k">${k}</p><p class="v">${typeof v === "number" ? (v <= 1 && k !== "n" ? (v * 100).toFixed(v === s.accuracy || k.startsWith("F") ? 1 : 2) + "%" : v) : v}</p></div>`).join("");
+    const src = Object.entries(s.per_source).map(([k, v]) =>
+      `<div><div class="mb-1 flex justify-between text-[11px] font-bold"><span class="text-muted">${k}</span><span>${(v.acc * 100).toFixed(1)}% (${v.correct}/${v.total})</span></div>
+       <div class="srcbar"><div style="width:${v.acc * 100}%"></div></div></div>`).join("");
+    setsEl.insertAdjacentHTML("beforeend", `
+      <section class="rounded-2xl border border-line bg-card p-6">
+        <h2 class="text-xl font-black">${name} <span class="text-[12px] font-bold text-muted">n=${s.n}</span></h2>
+        <p class="mt-1 text-[12px] font-medium text-muted">${s.note || ""}</p>
+        <div class="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-6">${cards}</div>
+        <div class="mt-5 grid gap-6 md:grid-cols-2">
+          <div><p class="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-muted">Confusion (true × pred)</p>
+            <div class="cm">
+              <div class="tn"><p class="text-[10px] font-bold text-muted">TRUE REAL → REAL</p><p class="text-xl font-black text-spotify">${c.tn}</p></div>
+              <div class="fp"><p class="text-[10px] font-bold text-muted">TRUE REAL → FAKE</p><p class="text-xl font-black">${c.fp}</p></div>
+              <div class="fn"><p class="text-[10px] font-bold text-muted">TRUE FAKE → REAL</p><p class="text-xl font-black">${c.fn}</p></div>
+              <div class="tp"><p class="text-[10px] font-bold text-muted">TRUE FAKE → FAKE</p><p class="text-xl font-black text-fuchsia-400">${c.tp}</p></div>
+            </div>
+            <p class="mt-2 text-[12px] font-semibold text-muted">mean P(FAKE): true-REAL ${s.mean_p_fake_on_real} (want ≈0) · true-FAKE ${s.mean_p_fake_on_fake} (want ≈1)</p>
+          </div>
+          <div><p class="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-muted">Per-source accuracy</p>
+            <div class="space-y-2.5">${src}</div></div>
+        </div>
+      </section>`);
+  }
+})();
+</script>
+</body>
+</html>

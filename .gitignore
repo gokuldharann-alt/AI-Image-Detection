@@ -1,0 +1,26 @@
+# venv + caches
+.venv/
+__pycache__/
+*/__pycache__/
+*.pyc
+
+# datasets + user uploads (regenerate via dl_*.py / build_*.py)
+data/
+
+# large binaries (share via Releases / HF Hub, not git)
+weights/*.pt
+weights/*.onnx
+weights/*.onnx.data
+weights/*.bak
+
+# junk from mistyped pip installs
+0.8.5
+1.13.3
+2.5.1
+4.10.0
+5.3.0
+torch)
+
+# os
+.DS_Store
+Thumbs.db

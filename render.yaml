@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: veritas-detector
+    env: python
+    plan: free
+    pythonVersion: 3.11.0
+    buildCommand: pip install --upgrade pip && pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && grep -v -E "^(torch|torchvision)" requirements.txt > /tmp/req.txt && pip install --no-cache-dir -r /tmp/req.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /api/health
+    envVars:
+      - key: DEVICE
+        value: cpu
+      - key: USE_ONNX
+        value: 0
+      - key: USE_FP16
+        value: 0
+      - key: IMAGE_SIZE
+        value: 224
+      - key: OMP_NUM_THREADS
+        value: 1
+      - key: OPENBLAS_NUM_THREADS
+        value: 1

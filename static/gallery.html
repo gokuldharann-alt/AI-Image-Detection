@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Veritas — Dataset Gallery</title>
+<meta name="description" content="Browse HQ + NEWER training data like Google Photos. Balanced REAL vs FAKE." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { sans: ['Montserrat','system-ui','sans-serif'] },
+    colors: { spotify: '#1DB954', spotifydark: '#1AA34A', ink: '#121212', card: '#181818', cardhover: '#282828', muted: '#B3B3B3', line: '#2A2A2A' }
+  }}}
+</script>
+<link rel="stylesheet" href="/static/styles.css" />
+<style>
+  .photo-grid { columns: 2; column-gap: 10px; }
+  @media (min-width: 640px){ .photo-grid{ columns: 3; } }
+  @media (min-width: 1024px){ .photo-grid{ columns: 5; } }
+  .photo-cell{ break-inside: avoid; margin-bottom: 10px; }
+  .photo-cell img{ width:100%; border-radius:12px; border:1px solid #2A2A2A; cursor:zoom-in; background:#000; }
+  .photo-cell img:hover{ border-color:rgba(29,185,84,.7); }
+  .pill-active{ background:#1DB954 !important; color:#000 !important; border-color:#1DB954 !important; }
+</style>
+</head>
+<body class="bg-ink text-white antialiased">
+<header class="sticky top-0 z-40 border-b border-line bg-black/80 backdrop-blur-md">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
+    <a href="/" class="flex items-center gap-3">
+      <div class="logo-pulse grid h-10 w-10 place-items-center rounded-full bg-spotify text-xl font-black text-black">V</div>
+      <div><p class="text-[15px] font-extrabold tracking-tight leading-none">Veritas</p>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">Dataset Gallery</p></div>
+    </a>
+    <nav class="flex items-center gap-5 text-[13px] font-bold text-muted">
+      <a href="/" class="transition hover:text-white">Detect</a>
+      <a href="/gallery" class="text-white">Datasets</a>
+      <a href="/playground" class="transition hover:text-white">Playground</a>
+      <a href="/metrics" class="transition hover:text-white">Metrics</a>
+      <a href="/docs" class="transition hover:text-white">API</a>
+    </nav>
+  </div>
+</header>
+
+<main class="mx-auto max-w-6xl px-5 pb-20">
+  <section class="fade-up pt-10 text-center">
+    <h1 class="text-4xl font-black tracking-tight md:text-5xl">Training data, <span class="text-spotify">unboxed.</span></h1>
+    <p class="mx-auto mt-3 max-w-2xl text-[14px] font-medium text-muted">Google-Photos-style view of what the model actually saw. HQ (512px canonical, COCO real + MJ/NanoBanana/art fakes) + NEWER (mixed generators) + AUTO (modern generators: Defactify, v3, Tiny-GenImage). Read-only — feedback images live separately.</p>
+    <p id="statsLine" class="mt-3 text-[12px] font-bold text-muted">loading counts…</p>
+  </section>
+
+  <!-- ══════════ REFERENCES (read before browsing) ══════════ -->
+  <section class="mt-8 rounded-2xl border border-line bg-card p-6 text-left">
+    <h2 class="text-lg font-black">Dataset references</h2>
+    <p class="mt-1 text-[12px] font-medium text-muted">Every image below comes from one of these sources. All three sets are balanced REAL==FAKE and canonicalized to 512px JPEG Q95.</p>
+    <div class="mt-4 grid gap-4 md:grid-cols-3">
+      <div class="rounded-xl border border-line bg-black/40 p-4">
+        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-spotify">HQ · 4,000 · live brain</p>
+        <p class="mt-1.5 text-[12px] font-medium leading-relaxed text-muted">Built in-house: COCO val2017 reals (Lin et al., 2014) + NEWER fakes filtered to ≥224px, reals ≥448px. Train 1500+1500, test 500+500.</p>
+        <p class="mt-2 text-[11px] font-semibold text-muted/70">Refs: COCO (cocodataset.org) · GenImage, Zhu et al. 2023 (MidJourney shard) · julienlucas midjourney-dalle-sd-nanobanana mix · hmnshudhmn24 art-images</p>
+      </div>
+      <div class="rounded-xl border border-line bg-black/40 p-4">
+        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">NEWER · ~14.5k · lineage</p>
+        <p class="mt-1.5 text-[12px] font-medium leading-relaxed text-muted">CIFAKE (Bird &amp; Lotfi, 2024) + MidJourney / DALL-E / SD / NanoBanana / art fakes. Train 5770+5770, test 1472+1472. Staging pool — no checkpoint trains on it directly.</p>
+        <p class="mt-2 text-[11px] font-semibold text-muted/70">Refs: CIFAKE (Kaggle birdy654) · bitmind/GenImage_MidJourney · julienlucas/…-nanobanapro · hmnshudhmn24/…-art-images</p>
+      </div>
+      <div class="rounded-xl border border-line bg-black/40 p-4">
+        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-fuchsia-400">AUTO · ~6k · modern gens</p>
+        <p class="mt-1.5 text-[12px] font-medium leading-relaxed text-muted">Streamed via <code class="rounded bg-card px-1 text-spotify">dl_auto.py</code> (SHA256 dedup, resume-safe). Train ~2500+2500, test 498+498. Retrains <code class="rounded bg-card px-1 text-spotify">hq_*.pt</code>.</p>
+        <p class="mt-2 text-[11px] font-semibold text-muted/70">Refs: Rajarshi-Roy-research/Defactify_Image_Dataset (SD2.1/SDXL/SD3/DALLE3/MJv6, 96k) · Shanmuk4622/ai-detection-dataset-v3 (SD1.5/SDXL/FLUX/Kandinsky/PixArt/Würstchen, 70k) · TheKernel01/Tiny-GenImage (ADM/BigGAN/GLIDE/MJ/SD1.4/1.5/VQDM/Wukong)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- filters -->
+  <section class="mt-6 flex flex-wrap items-center justify-center gap-2 text-[12px] font-bold">
+    <div class="flex gap-2" id="dsTabs">
+      <button data-ds="HQ" class="pill-active rounded-full border border-line bg-card px-4 py-2">HQ · current</button>
+      <button data-ds="NEWER" class="rounded-full border border-line bg-card px-4 py-2 text-muted">NEWER · lineage</button>
+      <button data-ds="AUTO" class="rounded-full border border-line bg-card px-4 py-2 text-muted">AUTO · modern</button>
+    </div>
+    <span class="text-muted">·</span>
+    <div class="flex gap-2" id="splitTabs">
+      <button data-split="train" class="pill-active rounded-full border border-line bg-card px-4 py-2">train</button>
+      <button data-split="test" class="rounded-full border border-line bg-card px-4 py-2 text-muted">test</button>
+    </div>
+    <span class="text-muted">·</span>
+    <div class="flex gap-2" id="clsTabs">
+      <button data-cls="ALL" class="pill-active rounded-full border border-line bg-card px-4 py-2">ALL</button>
+      <button data-cls="REAL" class="rounded-full border border-line bg-card px-4 py-2 text-muted">● REAL</button>
+      <button data-cls="FAKE" class="rounded-full border border-line bg-card px-4 py-2 text-muted">◆ FAKE</button>
+    </div>
+  </section>
+
+  <p id="countLine" class="mt-4 text-center text-[12px] font-semibold text-muted"></p>
+  <div id="grid" class="photo-grid mt-4"></div>
+  <div class="mt-6 text-center">
+    <button id="moreBtn" class="rounded-full border border-line bg-card px-6 py-2.5 text-[13px] font-bold text-muted hover:border-spotify/60 hover:text-white">Load more</button>
+  </div>
+  <p class="mt-6 text-center text-[11px] font-medium text-muted/70">Why this matters: CIFAKE was 32px single-generator (resolution shortcut). NEWER added generators. HQ keeps only ≥224px fakes + ≥448px COCO reals, 512px Q95, REAL==FAKE. AUTO adds modern generators (SD3, DALL-E 3, FLUX, MJv6) the same way.</p>
+</main>
+
+<!-- lightbox -->
+<div id="lightbox" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/90 p-5">
+  <div class="max-w-3xl w-full rounded-2xl border border-line bg-card p-4">
+    <img id="lbImg" class="max-h-[70vh] w-full rounded-xl object-contain bg-black" alt="dataset sample" />
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+      <p id="lbMeta" class="text-[12px] font-bold text-muted"></p>
+      <div class="flex gap-2">
+        <a id="lbPlay" href="#" class="rounded-full bg-spotify px-4 py-2 text-[12px] font-extrabold text-black">▶ Try in playground</a>
+        <button id="lbClose" class="rounded-full border border-line px-4 py-2 text-[12px] font-bold text-muted">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const grid = $("grid"), moreBtn = $("moreBtn"), countLine = $("countLine"), statsLine = $("statsLine");
+  let ds = "HQ", split = "train", cls = "ALL", offset = 0, total = 0;
+  const LIMIT = 60;
+
+  async function loadCounts() {
+    try {
+      const r = await fetch("/api/datasets"); const j = await r.json();
+      const hq = j.datasets.HQ, nw = j.datasets.NEWER, au = j.datasets.AUTO;
+      const sum = (o) => o.train.REAL + o.train.FAKE + o.test.REAL + o.test.FAKE;
+      statsLine.textContent = `HQ ${sum(hq)} images (train ${hq.train.REAL+hq.train.FAKE} / test ${hq.test.REAL+hq.test.FAKE}) · NEWER ${sum(nw)} · AUTO ${sum(au)} · all balanced REAL==FAKE`;
+    } catch { statsLine.textContent = "counts unavailable — is the server running?"; }
+  }
+
+  function bindTabs(id, key, cb) {
+    $(id).querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+      $(id).querySelectorAll("button").forEach(x => { x.classList.remove("pill-active"); x.classList.add("text-muted"); });
+      b.classList.add("pill-active"); b.classList.remove("text-muted");
+      cb(b.dataset[key]); reset();
+    }));
+  }
+  bindTabs("dsTabs", "ds", v => ds = v);
+  bindTabs("splitTabs", "split", v => split = v);
+  bindTabs("clsTabs", "cls", v => cls = v);
+
+  function reset(){ offset = 0; total = 0; grid.innerHTML = ""; load(); }
+  moreBtn.addEventListener("click", load);
+
+  async function load() {
+    moreBtn.textContent = "Loading…";
+    const r = await fetch(`/api/datasets/images?dataset=${ds}&split=${split}&cls=${cls}&offset=${offset}&limit=${LIMIT}`);
+    const j = await r.json();
+    total = j.total;
+    countLine.textContent = `${j.dataset} / ${j.split} / ${j.cls} — showing ${Math.min(offset + j.images.length, total)} of ${total}`;
+    for (const im of j.images) {
+      const cell = document.createElement("div");
+      cell.className = "photo-cell";
+      const badge = im.cls === "REAL"
+        ? `<span class="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-extrabold text-spotify">REAL</span>`
+        : `<span class="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-extrabold text-fuchsia-400">FAKE</span>`;
+      cell.innerHTML = `<div class="relative">${badge}<img loading="lazy" src="${im.url}" alt="${ds} ${im.cls}" /></div>`;
+      cell.querySelector("img").addEventListener("click", () => openLb(im));
+      grid.appendChild(cell);
+    }
+    offset += j.images.length;
+    moreBtn.style.display = offset >= total ? "none" : "";
+    moreBtn.textContent = "Load more";
+  }
+
+  const lb = $("lightbox");
+  function openLb(im) {
+    $("lbImg").src = im.url;
+    $("lbMeta").textContent = `${ds} / ${split} / ${im.cls} — ${im.name}`;
+    $("lbPlay").href = `/playground?img=${encodeURIComponent(im.url)}`;
+    lb.classList.remove("hidden"); lb.classList.add("flex");
+  }
+  $("lbClose").addEventListener("click", closeLb);
+  lb.addEventListener("click", e => { if (e.target === lb) closeLb(); });
+  function closeLb(){ lb.classList.add("hidden"); lb.classList.remove("flex"); }
+
+  loadCounts(); load();
+})();
+</script>
+</body>
+</html>

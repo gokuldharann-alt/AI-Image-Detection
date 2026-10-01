@@ -1,0 +1,63 @@
+/* Veritas — Spotify-inspired design system. Montserrat only. */
+:root{
+  --spotify:#1DB954; --spotify-dark:#1AA34A;
+  --ink:#121212; --card:#181818; --hover:#282828;
+  --muted:#B3B3B3; --line:#2A2A2A;
+}
+*{ font-family:'Montserrat',system-ui,sans-serif; }
+html{ scroll-behavior:smooth; }
+body{ background:
+  radial-gradient(900px 320px at 15% -60px, rgba(29,185,84,.14), transparent 60%),
+  radial-gradient(800px 300px at 90% 0px, rgba(29,185,84,.08), transparent 60%),
+  var(--ink);
+}
+::selection{ background:var(--spotify); color:#000; }
+
+/* ── dropzone ── */
+.dropzone{ cursor:pointer; }
+.dropzone:hover{ border-color:rgba(29,185,84,.55); background:#1b1b1b; }
+.dropzone:focus-visible{ border-color:var(--spotify); box-shadow:0 0 0 3px rgba(29,185,84,.35); }
+.dropzone.dragging{
+  border-color:var(--spotify) !important; border-style:solid !important;
+  background:rgba(29,185,84,.07) !important;
+  transform:scale(1.012);
+  box-shadow:0 0 0 4px rgba(29,185,84,.18), 0 20px 60px rgba(29,185,84,.15);
+}
+.dropzone.dragging #dzOverlay{ display:grid !important; }
+
+/* ── logo / live indicators ── */
+.logo-pulse{ animation:logoPulse 2.6s ease-in-out infinite; box-shadow:0 0 24px rgba(29,185,84,.45); }
+@keyframes logoPulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+.live-dot{ width:8px;height:8px;border-radius:9999px;background:var(--spotify); animation:blink 1.4s infinite; display:inline-block;}
+@keyframes blink{ 0%,100%{opacity:1; box-shadow:0 0 8px var(--spotify)} 50%{opacity:.35; box-shadow:none} }
+
+/* ── terminal ── */
+.terminal{ font-variant-numeric:tabular-nums; scrollbar-width:thin; scrollbar-color:#333 transparent; }
+.terminal::-webkit-scrollbar{ width:8px } .terminal::-webkit-scrollbar-thumb{ background:#333;border-radius:8px }
+.term-line{ animation:termIn .25s ease both; word-break:break-word; }
+.term-line .t-tag{ color:var(--spotify); font-weight:800; }
+.term-ok{ color:#7dffa8 } .term-warn{ color:#ffd479 } .term-dim{ color:#8a8a8a }
+.term-caret::after{ content:'▊'; color:var(--spotify); animation:blink 1s steps(1) infinite; }
+@keyframes termIn{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
+
+/* ── skeleton shimmer ── */
+.skeleton{ background:linear-gradient(90deg,#222 25%,#2e2e2e 50%,#222 75%); background-size:200% 100%; animation:shimmer 1.2s infinite; }
+@keyframes shimmer{ from{background-position:200% 0} to{background-position:-200% 0} }
+
+/* ── entrance ── */
+.fade-up{ animation:fadeUp .7s cubic-bezier(.22,1,.36,1) both; }
+@keyframes fadeUp{ from{opacity:0; transform:translateY(16px)} to{opacity:1; transform:none} }
+
+/* ── telemetry chips ── */
+.tele-chip{ background:#0f0f0f; border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+.tele-chip p:first-child{ font-size:9.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.tele-chip p:last-child{ margin-top:2px; font-size:13.5px; font-weight:800; }
+
+/* verdict glow */
+.verdict-real{ color:var(--spotify); text-shadow:0 0 26px rgba(29,185,84,.45); }
+.verdict-fake{ color:#e879f9; text-shadow:0 0 26px rgba(232,121,249,.4); }
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}

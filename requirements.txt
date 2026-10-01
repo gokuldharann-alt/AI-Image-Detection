@@ -1,0 +1,16 @@
+# ── deep learning ─────────────────────────────────────────────
+torch>=2.2
+torchvision>=0.17
+numpy>=1.26
+Pillow>=10.0
+onnxruntime>=1.17          # CPU fast path (CUDA variant: onnxruntime-gpu)
+onnx>=1.15                 # only needed for export_onnx.py
+
+# ── backend ───────────────────────────────────────────────────────
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9    # file-upload parsing
+
+# ── training only ─────────────────────────────────────────────────
+tqdm>=4.66
+scikit-learn>=1.4

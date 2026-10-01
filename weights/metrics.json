@@ -1,0 +1,353 @@
+{
+  "checkpoint": "hq_efficientnet_b0.pt",
+  "backbone": "efficientnet_b0",
+  "saved_val_acc": 0.9769076305220884,
+  "img_size": 384,
+  "threshold": 0.5,
+  "generated_at": "2026-09-30T22:15:16",
+  "sets": {
+    "HQ-test": {
+      "threshold_sweep": [
+        {
+          "thr": 0.1,
+          "acc": 0.945,
+          "f1": 0.9456,
+          "far": 0.066,
+          "frr": 0.044
+        },
+        {
+          "thr": 0.15,
+          "acc": 0.945,
+          "f1": 0.9445,
+          "far": 0.046,
+          "frr": 0.064
+        },
+        {
+          "thr": 0.2,
+          "acc": 0.943,
+          "f1": 0.9414,
+          "far": 0.03,
+          "frr": 0.084
+        },
+        {
+          "thr": 0.25,
+          "acc": 0.936,
+          "f1": 0.9335,
+          "far": 0.026,
+          "frr": 0.102
+        },
+        {
+          "thr": 0.3,
+          "acc": 0.93,
+          "f1": 0.9265,
+          "far": 0.022,
+          "frr": 0.118
+        },
+        {
+          "thr": 0.35,
+          "acc": 0.921,
+          "f1": 0.9159,
+          "far": 0.018,
+          "frr": 0.14
+        },
+        {
+          "thr": 0.4,
+          "acc": 0.916,
+          "f1": 0.9101,
+          "far": 0.018,
+          "frr": 0.15
+        },
+        {
+          "thr": 0.45,
+          "acc": 0.91,
+          "f1": 0.9024,
+          "far": 0.012,
+          "frr": 0.168
+        },
+        {
+          "thr": 0.5,
+          "acc": 0.906,
+          "f1": 0.8969,
+          "far": 0.006,
+          "frr": 0.182
+        },
+        {
+          "thr": 0.55,
+          "acc": 0.903,
+          "f1": 0.8928,
+          "far": 0.002,
+          "frr": 0.192
+        },
+        {
+          "thr": 0.6,
+          "acc": 0.895,
+          "f1": 0.8829,
+          "far": 0.002,
+          "frr": 0.208
+        },
+        {
+          "thr": 0.65,
+          "acc": 0.888,
+          "f1": 0.8742,
+          "far": 0.002,
+          "frr": 0.222
+        },
+        {
+          "thr": 0.7,
+          "acc": 0.879,
+          "f1": 0.8627,
+          "far": 0.002,
+          "frr": 0.24
+        },
+        {
+          "thr": 0.75,
+          "acc": 0.865,
+          "f1": 0.8443,
+          "far": 0.002,
+          "frr": 0.268
+        },
+        {
+          "thr": 0.8,
+          "acc": 0.855,
+          "f1": 0.8308,
+          "far": 0.002,
+          "frr": 0.288
+        },
+        {
+          "thr": 0.85,
+          "acc": 0.836,
+          "f1": 0.8043,
+          "far": 0.002,
+          "frr": 0.326
+        },
+        {
+          "thr": 0.9,
+          "acc": 0.807,
+          "f1": 0.7608,
+          "far": 0.0,
+          "frr": 0.386
+        },
+        {
+          "thr": 0.95,
+          "acc": 0.762,
+          "f1": 0.6877,
+          "far": 0.0,
+          "frr": 0.476
+        }
+      ],
+      "best_f1_threshold": {
+        "thr": 0.1,
+        "f1": 0.9456
+      },
+      "n": 1000,
+      "accuracy": 0.906,
+      "precision_fake": 0.9927,
+      "recall_fake": 0.818,
+      "f1_fake": 0.8969,
+      "auc": 0.9904,
+      "confusion": {
+        "tn": 497,
+        "fp": 3,
+        "fn": 91,
+        "tp": 409
+      },
+      "mean_p_fake_on_real": 0.0212,
+      "mean_p_fake_on_fake": 0.7989,
+      "per_source": {
+        "hq_fake/FAKE": {
+          "correct": 409,
+          "total": 500,
+          "acc": 0.818
+        },
+        "hq_realt/REAL": {
+          "correct": 497,
+          "total": 500,
+          "acc": 0.994
+        }
+      },
+      "note": "Original HQ distribution (COCO reals + MJ/nano/art fakes). Checkpoints retrained on AUTO may show mild forgetting here vs their original HQ val acc."
+    },
+    "AUTO-test": {
+      "threshold_sweep": [
+        {
+          "thr": 0.1,
+          "acc": 0.9518,
+          "f1": 0.9539,
+          "far": 0.0944,
+          "frr": 0.002
+        },
+        {
+          "thr": 0.15,
+          "acc": 0.9598,
+          "f1": 0.9613,
+          "far": 0.0783,
+          "frr": 0.002
+        },
+        {
+          "thr": 0.2,
+          "acc": 0.9629,
+          "f1": 0.964,
+          "far": 0.0683,
+          "frr": 0.006
+        },
+        {
+          "thr": 0.25,
+          "acc": 0.9649,
+          "f1": 0.9657,
+          "far": 0.0602,
+          "frr": 0.01
+        },
+        {
+          "thr": 0.3,
+          "acc": 0.9679,
+          "f1": 0.9686,
+          "far": 0.0542,
+          "frr": 0.01
+        },
+        {
+          "thr": 0.35,
+          "acc": 0.9689,
+          "f1": 0.9695,
+          "far": 0.0522,
+          "frr": 0.01
+        },
+        {
+          "thr": 0.4,
+          "acc": 0.9729,
+          "f1": 0.9733,
+          "far": 0.0422,
+          "frr": 0.012
+        },
+        {
+          "thr": 0.45,
+          "acc": 0.9749,
+          "f1": 0.9752,
+          "far": 0.0361,
+          "frr": 0.0141
+        },
+        {
+          "thr": 0.5,
+          "acc": 0.9769,
+          "f1": 0.9771,
+          "far": 0.0321,
+          "frr": 0.0141
+        },
+        {
+          "thr": 0.55,
+          "acc": 0.9779,
+          "f1": 0.9781,
+          "far": 0.0301,
+          "frr": 0.0141
+        },
+        {
+          "thr": 0.6,
+          "acc": 0.9769,
+          "f1": 0.977,
+          "far": 0.0281,
+          "frr": 0.0181
+        },
+        {
+          "thr": 0.65,
+          "acc": 0.9739,
+          "f1": 0.9739,
+          "far": 0.0281,
+          "frr": 0.0241
+        },
+        {
+          "thr": 0.7,
+          "acc": 0.9769,
+          "f1": 0.9768,
+          "far": 0.0181,
+          "frr": 0.0281
+        },
+        {
+          "thr": 0.75,
+          "acc": 0.9719,
+          "f1": 0.9716,
+          "far": 0.0181,
+          "frr": 0.0382
+        },
+        {
+          "thr": 0.8,
+          "acc": 0.9699,
+          "f1": 0.9695,
+          "far": 0.0161,
+          "frr": 0.0442
+        },
+        {
+          "thr": 0.85,
+          "acc": 0.9659,
+          "f1": 0.9652,
+          "far": 0.0141,
+          "frr": 0.0542
+        },
+        {
+          "thr": 0.9,
+          "acc": 0.9588,
+          "f1": 0.9574,
+          "far": 0.008,
+          "frr": 0.0743
+        },
+        {
+          "thr": 0.95,
+          "acc": 0.9428,
+          "f1": 0.9397,
+          "far": 0.006,
+          "frr": 0.1084
+        }
+      ],
+      "best_f1_threshold": {
+        "thr": 0.55,
+        "f1": 0.9781
+      },
+      "n": 996,
+      "accuracy": 0.9769,
+      "precision_fake": 0.9684,
+      "recall_fake": 0.9859,
+      "f1_fake": 0.9771,
+      "auc": 0.997,
+      "confusion": {
+        "tn": 482,
+        "fp": 16,
+        "fn": 7,
+        "tp": 491
+      },
+      "mean_p_fake_on_real": 0.046,
+      "mean_p_fake_on_fake": 0.9703,
+      "per_source": {
+        "auto_aiimag/FAKE": {
+          "correct": 162,
+          "total": 166,
+          "acc": 0.9759
+        },
+        "auto_aiimag/REAL": {
+          "correct": 160,
+          "total": 166,
+          "acc": 0.9639
+        },
+        "auto_defact/FAKE": {
+          "correct": 164,
+          "total": 166,
+          "acc": 0.988
+        },
+        "auto_defact/REAL": {
+          "correct": 161,
+          "total": 166,
+          "acc": 0.9699
+        },
+        "auto_tinyge/FAKE": {
+          "correct": 165,
+          "total": 166,
+          "acc": 0.994
+        },
+        "auto_tinyge/REAL": {
+          "correct": 161,
+          "total": 166,
+          "acc": 0.9699
+        }
+      },
+      "note": "Modern generators (Defactify: SD2.1/SDXL/SD3/DALLE3/MJv6; v3: SD1.5/SDXL/FLUX/Kandinsky/PixArt/Wuerstchen; Tiny-GenImage: ADM/BigGAN/GLIDE/MJ/SD1.4/SD1.5/VQDM/Wukong). Unseen for pre-AUTO checkpoints; in-distribution for AUTO-trained ones."
+    }
+  },
+  "eval_seconds": 125.8
+}
